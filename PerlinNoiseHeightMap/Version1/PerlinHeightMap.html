@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: black; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body id="theBody" onLoad='getHeightMap();'>
+
+<canvas id="myCanvas" width="1920" height="1080"></canvas>
+<button type="button" onclick="newMap();">Generate Map</button>
+<button type="button" onclick="displayMapGreyScale();">Display Greyscale Map</button>
+<button type="button" onclick="displayTerrainColour();">Display Colour Map</button>
+<!--<button type="button" onclick="drawNumbers();">Generate Number Map</button>-->
+
+<script src="D:\Programs\Web Development\Projects\PerlinNoiseHeightMap\perlin.js"></script>
+<script>
+	var lowTemp =-90;
+	var highTemp = 60;
+	var terraceCount = 10;
+	var waterHeight = .1;
+	var grassHeight = .5;
+	var rockHeight =.75;
+	var smoothness = 1.5;
+	var maxHeight=255;
+	var seed = Math.random();
+	var canvas = document.getElementById("myCanvas");
+	
+	var zoomX = canvas.width/10;
+	var zoomY = canvas.height/10;
+	
+	
+	var ctx = canvas.getContext("2d");
+	var currentHeightMap;
+	
+	
+	function newMap(){
+		seed = Math.random();
+		getHeightMap();
+	};
+	function getHeightMap(){
+		var mapWidth = canvas.width;
+		var mapHeight = canvas.height;
+		var map
+		map = getHeight(mapWidth,mapHeight);
+		currentHeightMap=map;
+		displayTerrainColour();
+	}
+	
+	function getHeight(width, height){
+		var e;
+		noise.seed(seed);
+		var array= new Array();
+		for(var i=0;i<width;i++){
+			array[i]=new Array();
+			for(var p=0;p<height;p++){
+				e = (((1*Math.abs(noise.simplex2( i/zoomX , p/zoomY )))+(.5*Math.abs(noise.simplex2(2* i/zoomX , 2*p/zoomY )))+(.25*Math.abs(noise.simplex2( 4*i/zoomX , 4*p/zoomY ))))/1.75)-.1;
+				if(e<0){e=0}
+				array[i][p]= Math.pow(e,smoothness);
+			}
+		}
+		return array;
+	}
+	
+	function displayTerrainColour(){
+		for(var i=0;i<currentHeightMap.length;i++){
+			for(var p=0;p<currentHeightMap[i].length;p++){
+				if(currentHeightMap[i][p]<=waterHeight){
+					ctx.fillStyle= 'rgb(29, 113, 247)';//Blue
+				}else if(currentHeightMap[i][p]<=grassHeight){
+					ctx.fillStyle= 'rgb(88, 165, 46)';//Green
+				}else if(currentHeightMap[i][p]<=rockHeight){
+					ctx.fillStyle= 'rgb(142, 113, 72)';//Brown
+				}else{
+					ctx.fillStyle='rgb(255, 255, 255)';//white
+				}
+				ctx.fillRect(i,p,1,1);
+
+
+			}
+		}
+	}
+	function displayMapGreyScale(){
+		for(var i=0;i<currentHeightMap.length;i++){
+			for(var p=0;p<currentHeightMap[i].length;p++){
+				height = parseInt(currentHeightMap[i][p]*maxHeight);
+				ctx.fillStyle= 'rgb('+height+','+height+','+height+')';
+				ctx.fillRect(i,p,1,1);
+
+
+			}
+		}
+	}
+	
+	function drawNumbers(){
+		for(var i=0;i<canvas.width;i++){
+			document.getElementById('theBody').innerHTML+='<p>';
+			for(var p=0;p<canvas.height;p++){
+				document.getElementById('theBody').innerHTML+=currentHeightMap[i][p];
+			}
+			
+			document.getElementById('theBody').innerHTML+='</p>';
+		}
+	};
+	
+	function createMoistureMap(){
+		
+	}
+	
+	function displayMoistureMap(){
+		
+	}
+	
+	function createHeatMAp(){
+		
+	}
+	
+	function displayHeatMap(){
+		
+	}
+	
+	function mapPoint(h){
+		this.height = h;
+	}
+</script>
+
+</body>
+</html>

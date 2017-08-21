@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: black; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body id="theBody" onLoad='getHeightMap();'>
+
+<canvas id="myCanvas" width="1920" height="1080"></canvas>
+<button type="button" onclick="newMap();">Generate Map</button>
+<button type="button" onclick="displayMapGreyScale();">Display Greyscale Map</button>
+<button type="button" onclick="displayTerrainColour();">Display Colour Map</button>
+<button type="button" onclick="displayHeatMap();">Display Heat Map</button>
+<button type="button" onclick="displayMoistureMap();">Display Moisture Map</button>
+<!--<button type="button" onclick="drawNumbers();">Generate Number Map</button>-->
+
+<script src="D:\Programs\Web Development\Projects\PerlinNoiseHeightMap\perlin.js"></script>
+<script>
+	var lowTemp =-55;
+	var highTemp = 40;
+	var terraceCount = 10;
+	var waterHeight = .1;
+	var grassHeight = .5;
+	var rockHeight =.75;
+	var smoothness = 1.5;
+	var maxHeight=255;
+	var seed = Math.random();
+	var canvas = document.getElementById("myCanvas");
+	
+	var zoomX = canvas.width/10;
+	var zoomY = canvas.height/10;
+	
+	var ctx = canvas.getContext("2d");
+	var currentHeightMap;
+	
+	
+	
+	function newMap(){
+		seed = Math.random();
+		getHeightMap();
+		
+	};
+	function getHeightMap(){
+		var mapWidth = canvas.width;
+		var mapHeight = canvas.height;
+		var map
+		map = getHeightArchipelago(mapWidth,mapHeight);
+		currentHeightMap=map;
+		createHeatHeightMap();
+		createMoistureMap();
+		displayTerrainColour();
+	}
+	
+	function getHeightArchipelago(width, height){
+		var e;
+		noise.seed(seed);
+		var array= new Array();
+		for(var i=0;i<width;i++){
+			array[i]=new Array();
+			for(var p=0;p<height;p++){
+				e = (((1*Math.abs(noise.simplex2( i/zoomX , p/zoomY )))+(.5*Math.abs(noise.simplex2(2* i/zoomX , 2*p/zoomY )))+(.25*Math.abs(noise.simplex2( 4*i/zoomX , 4*p/zoomY ))))/1.75)-.1;
+				if(e<0){e=0}
+				array[i][p]= new mapPoint()
+				array[i][p].height = Math.pow(e,smoothness);
+			}
+		}
+		return array;
+	}
+	
+	function getHeightContinent(width, height){
+		var e;
+		var d;
+		var a= 0.0;
+		var b= 1; 
+		var c= 2;
+		
+		noise.seed(seed);
+		var array= new Array();
+		for(var x=0;x<width;x++){
+			array[x]=new Array();
+			for(var y=0;y<height;y++){
+				d = (Math.sqrt(Math.pow(x-(canvas.width/2),2)) + Math.pow(y-(canvas.height/2),2))/Math.sqrt((Math.pow(540,2))+(Math.pow(960,2)));
+				e = (((1*Math.abs(noise.simplex2( x/zoomX , y/zoomY )))+(.5*Math.abs(noise.simplex2(2* x/zoomX , 2*y/zoomY )))+(.25*Math.abs(noise.simplex2( 4*x/zoomX , 4*y/zoomY ))))/1.75)-.1;
+				e = e + a - b*Math.pow(c,d);
+				if(e<0){e=0}
+				
+				array[x][y]= new mapPoint()
+				array[x][y].height = Math.pow(e,smoothness);
+			}
+		}
+		return array;
+	}
+	
+	function getHeightMountains(width,height){
+		var e;
+		noise.seed(seed);
+		var array= new Array();
+		for(var i=0;i<width;i++){
+			array[i]=new Array();
+			for(var p=0;p<height;p++){
+				e = ((Math.abs(1*noise.simplex2( i/zoomX , p/zoomY ))+Math.abs(.5*noise.simplex2(2* i/zoomX , 2*p/zoomY ))+Math.abs(.25*noise.simplex2( 4*i/zoomX , 4*p/zoomY ))+.5)/2.25);
+				if(e<0){e=0;}
+				
+				array[i][p]= new mapPoint()
+				array[i][p].height = Math.pow(e,smoothness);
+			}
+		}
+		return array;
+	}
+	
+	function getHeightIslands(width,height){
+		var e;
+		noise.seed(seed);
+		var array= new Array();
+		for(var i=0;i<width;i++){
+			array[i]=new Array();
+			for(var p=0;p<height;p++){
+				e = (((1*noise.simplex2( i/zoomX , p/zoomY ))+(.5*noise.simplex2(2* i/zoomX , 2*p/zoomY ))+(.25*noise.simplex2( 4*i/zoomX , 4*p/zoomY )))/1.75);
+				if(e<0){e=0;}
+				array[i][p]= new mapPoint()
+				array[i][p].height = Math.pow(e,smoothness);
+			}
+		}
+		return array;
+	}
+	
+	function displayTerrainColour(){
+		for(var i=0;i<currentHeightMap.length;i++){
+			for(var p=0;p<currentHeightMap[i].length;p++){
+				
+				var s = 0;//Amount to darken colour if there should not be a shadow
+				if(i!=0 ){
+					if(currentHeightMap[i][p].height < currentHeightMap[i-1][p].height){
+						s = parseInt(30); //Amount to darken colour if there should be a shadow
+					}
+				}
+				
+				if(currentHeightMap[i][p].height<waterHeight){
+					if(currentHeightMap[i][p].temp>((10/19)*255)){
+						ctx.fillStyle= 'rgb('+0+','+0+','+255+')';//Water
+					}else{
+						s=0
+						//ctx.fillStyle= 'rgb('+(209-(s/5))+','+(243-(s/5))+','+(252-(s/5))+')';//Glacier
+						ctx.fillStyle= 'rgb('+(250-(s/5))+','+(250-(s/5))+','+(250-(s/5))+')';
+					}
+				}else if(currentHeightMap[i][p].temp<=((11/19)*255)){
+					if(currentHeightMap[i][p].moisture<=0.05){
+						ctx.fillStyle= 'rgb('+(175-s)+','+(179-s)+','+(181-s)+')';//Tundra/Rock
+					}else{
+						ctx.fillStyle= 'rgb('+(255-s)+','+(255-s)+','+(255-s)+')';//Snow
+					}
+				}else if(currentHeightMap[i][p].temp<=((14/19)*255)){
+					if(currentHeightMap[i][p].moisture<=0.05){
+						ctx.fillStyle= 'rgb('+(224-s)+','+(207-s)+','+(96-s)+')';//Sand
+					}else{
+						ctx.fillStyle= 'rgb('+(89-s)+','+(165-s)+','+(92-s)+')';//Forest
+					}
+				}else{
+					if(currentHeightMap[i][p].moisture<=0.2){
+						ctx.fillStyle= 'rgb('+(224-s)+','+(207-s)+','+(96-s)+')';//Sand
+					}else{
+						ctx.fillStyle= 'rgb('+(6-s)+','+(132-s)+','+(8-s)+')';//Jungle
+					}
+				}
+				ctx.fillRect(i,p,1,1);
+
+
+			}
+		}
+
+	}
+	function displayMapGreyScale(){
+		for(var i=0;i<currentHeightMap.length;i++){
+			for(var p=0;p<currentHeightMap[i].length;p++){
+				height = parseInt(currentHeightMap[i][p].height*maxHeight);
+				ctx.fillStyle= 'rgb('+height+','+height+','+height+')';
+				ctx.fillRect(i,p,1,1);
+			}
+		}
+	}
+	
+	function drawNumbers(){
+		for(var i=0;i<canvas.width;i++){
+			document.getElementById('theBody').innerHTML+='<p>';
+			for(var p=0;p<canvas.height;p++){
+				document.getElementById('theBody').innerHTML+=currentHeightMap[i][p].height;
+			}
+			document.getElementById('theBody').innerHTML+='</p>';
+		}
+	};
+	
+	function createMoistureMap(){
+		for(var x=0;x<currentHeightMap.length;x++){
+			for(var y=0;y<currentHeightMap[x].length;y++){
+				e = ((((1*noise.simplex2( 2*(x/zoomX)/10, 2*(y/zoomY)/8))+Math.abs(0.5*noise.simplex2( 3*(x/zoomX)/1, 3*(y/zoomY)/1 ))+Math.abs(0.25*noise.simplex2( 5*(x/zoomX)/.5, 5*(y/zoomY)/1 )))+0.25)/2);
+				if (e<0){e=0;}
+				if(currentHeightMap[x][y].height <=waterHeight){
+						currentHeightMap[x][y].moisture = 1;
+				}else{
+					currentHeightMap[x][y].moisture = Math.pow(e,1);
+				}
+			}
+		}
+	}
+	
+	function displayMoistureMap(){
+		for(var x=0;x<currentHeightMap.length;x++){
+			for(var y=0;y<currentHeightMap[x].length;y++){
+				m = parseInt(currentHeightMap[x][y].moisture*maxHeight);
+				ctx.fillStyle= 'rgb('+m+','+m+','+m+')';
+				ctx.fillRect(x,y,1,1);
+			}
+		}
+	}
+	
+	
+	function createHeatHeightMap(){
+		var distance;
+		var temp;
+		var middleCoord = (canvas.height)/2;//Middle
+		for(var x=0;x<currentHeightMap.length;x++){
+			for(var y=0;y<currentHeightMap[x].length;y++){
+				distance = (middleCoord- Math.abs(middleCoord - y));//Distance from centre
+				temp = (((distance/middleCoord)*.5)+.5)-(currentHeightMap[x][y].height*.5);
+				currentHeightMap[x][y].temp = (temp)*255;
+				
+			}
+		}
+	}
+	
+	function createHeatMap(){
+		var distance;
+		var temperature;
+		var range1 = (canvas.height-1)/2;
+		var range2 = 255;
+		for(var x=0;x<currentHeightMap.length;x++){
+			for(var y=0;y<currentHeightMap[x].length;y++){
+				distance = range1 - Math.abs(range1 - y);
+				temperature = distance*range2/range1;
+				currentHeightMap[x][y].temp = temperature;
+			}
+		}
+	}
+	
+	function displayHeatMap(){
+		for(var x=0;x<currentHeightMap.length;x++){
+			for(var y=0;y<currentHeightMap[x].length;y++){
+				ctx.fillStyle= 'rgb('+parseInt(currentHeightMap[x][y].temp)+','+255+','+0+')';
+				ctx.fillRect(x,y,1,1);
+			}
+		}
+	}
+	
+	
+	function mapPoint(){
+	}
+</script>
+
+</body>
+</html>
